@@ -867,3 +867,44 @@ awslocal codepipeline list-action-executions --pipeline-name bacheca-pipeline --
 ./scripts/99-pulizia.sh
 docker compose down
 ```
+
+**Comandi rapidi**
+```bash
+docker compose up -d                       # accende LocalStack
+docker ps                                  # il container è su?
+curl -s http://localhost:4566/_localstack/health   # il servizio dentro è pronto?
+./scripts/00-check.sh                      # verdetto: binario A o B
+
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION=us-east-1
+export AWS_PAGER=""
+
+alias awslocal='aws --endpoint-url=http://localhost:4566'
+awslocal s3 mb s3://bacheca-its
+awslocal s3 website s3://bacheca-its --index-document index.html
+
+./build.sh
+awslocal s3 sync dist/ s3://bacheca-its --delete
+awslocal s3 ls s3://bacheca-its
+
+./scripts/90-anteprima.sh bacheca-its
+
+awslocal cloudformation deploy --stack-name bacheca \
+  --template-file infra/01-sito.yaml --parameter-overrides NomeBucket=bacheca-cfn
+awslocal cloudformation describe-stack-resources --stack-name bacheca --output table
+./build.sh && awslocal s3 sync dist/ s3://bacheca-cfn --delete
+
+./scripts/30-fase3-codebuild.sh
+awslocal codebuild list-builds-for-project --project-name bacheca-build
+awslocal s3 ls s3://bacheca-artefatti --recursive
+
+./scripts/40-fase4-pipeline.sh
+awslocal codepipeline list-action-executions --pipeline-name bacheca-pipeline --output table
+./scripts/41-rilancia.sh
+./scripts/90-anteprima.sh bacheca-cfn
+
+./scripts/99-pulizia.sh
+docker compose down
+docker compose down -v
+```

@@ -10,7 +10,23 @@
 > Hai pubblicato in quattro comandi. Cosa succede se domani li sbagli, o se li lancia
 > un tuo collega in ordine diverso?
 
-_(risposta)_
+**Ordine sbagliato** → fallimento a cascata:
+
+**s3 sync prima di mb** → bucket inesistente, errore
+**sync prima di website** → file caricati ma niente hosting statico attivo
+**build.sh dopo sync** → pubblichi versione vecchia/vuota
+
+**Comandi sbagliati/dimenticati:**
+
+**--delete omesso** → bucket accumula file obsoleti, versioni vecchie restano raggiungibili
+**--index-document omesso** → sito non serve pagina radice
+**credenziali/endpoint non esportate** → Could not connect to endpoint URL
+
+**Collega assente oggi:**
+
+Non conosce sequenza esatta, nomi bucket, flag necessari
+Nessuna fonte di verità unica: procedura vive solo nella tua testa/history del terminale
+**Rischio:** rifà bucket con nome diverso, dimentica website, o salta build.sh → pubblica sorgenti non compilati
 
 ---
 
@@ -19,7 +35,14 @@ _(risposta)_
 > Cosa e' cambiato quando hai rilanciato il deploy dopo aver modificato ErrorDocument?
 > Perche' CloudFormation non ha ricreato il bucket?
 
-_(risposta)_
+**Cambiato:** solo ErrorDocument (index.html→errore.html) applicato al bucket esistente, non ricreato.
+
+**Perché CFN non ricrea:** stack = stato salvato. 
+Confronta il template nuovo con lo stato precedente registrato → calcola changeset (diff) → applica solo differenza. 
+Bucket logico invariato tra deploy → CFN aggiorna proprietà, non tocca mai la risorsa. 
+Meccanismo identico a terraform plan: guarda cosa cambierebbe, poi applica solo quello.
+
+Se qualcuno modifica a mano da console: stato salvato ≠ realtà → drift.
 
 ---
 
